@@ -11,3 +11,5 @@ mise install
 ```
 
 `mise.toml` pins the versions of Bun, Node.js, TypeScript, and Python.
+
+Copy `.env.example` to `.env` and fill in the provider keys when needed. Local `.env` files are ignored by Git.
