@@ -4,7 +4,7 @@ This repository is an interview workspace for building an OpenRouter clone and e
 
 # Libraries and Runtime
 
-- Use Hono for HTTP routing, Zod for boundary validation, and the official `openai` and `@anthropic-ai/sdk` clients for provider calls.
+- Use Hono with `@hono/node-server` for HTTP serving, Zod for boundary validation, and the official `openai` and `@anthropic-ai/sdk` clients for provider calls.
 - Use Bun only for package management and script execution, and keep `bun.lock` updated. Tool versions are pinned through mise and `package.json`.
 - Always execute application code under Node.js, including scripts launched by Bun. Development uses Node.js watch mode with the `tsx` loader; compiled output also runs under Node.js. Do not use Bun runtime APIs.
 - Use `.js` extensions for relative imports in TypeScript source so compiled NodeNext modules resolve correctly.
