@@ -36,3 +36,14 @@ bun run start
 `dev` runs the entry point with Bun and restarts on changes. `check` type-checks without emitting files. `build` compiles to `dist/`, and `start` runs the compiled entry point with Node.js. Run `build` before `start`. To load local provider keys with Node.js, use `mise exec -- node --env-file=.env dist/index.js`.
 
 `tsconfig.base.json` enables strict checking, unchecked indexed access checks, ES2023, and NodeNext modules. `tsconfig.json` defines this project's source and output directories. Use `.js` extensions for relative imports so compiled modules run in Node.js.
+
+## Formatting and linting
+
+```sh
+bun run lint
+bun run lint:fix
+bun run fmt
+bun run fmt:check
+```
+
+Oxlint and Oxfmt are pinned in `package.json` and configured in `.oxlintrc.json` and `.oxfmtrc.json`. Linting includes the vendored [anti-slop rules](tools/oxlint/anti-slop/README.md) and the Effect `no-service-constructor-imports` rule. Lint scripts reject warnings and errors. Vendored rules are preserved unchanged and excluded from linting and formatting.
