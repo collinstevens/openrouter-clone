@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "mise exec -- bun --watch src/index.ts",
-    "start": "mise exec -- node dist/index.js",
+    "dev": "mise exec -- node --watch --env-file-if-exists=.env --import tsx src/index.ts",
+    "start": "mise exec -- node --env-file-if-exists=.env dist/index.js",
     "lint": "mise exec -- oxlint --deny-warnings",
     "lint:fix": "mise exec -- oxlint --deny-warnings --fix",
     "fmt": "mise exec -- oxfmt",
@@ -12,11 +12,18 @@
     "check": "mise exec -- tsc --noEmit",
     "build": "mise exec -- tsc"
   },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.124.0",
+    "hono": "4.13.7",
+    "openai": "7.10.0",
+    "zod": "4.5.4"
+  },
   "devDependencies": {
     "@oxlint/plugins": "1.82.0",
     "@types/node": "24",
     "oxfmt": "0.67.0",
-    "oxlint": "1.82.0"
+    "oxlint": "1.82.0",
+    "tsx": "4.23.13"
   },
   "engines": {
     "node": ">=24.20.0"

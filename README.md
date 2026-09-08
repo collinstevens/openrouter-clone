@@ -11,7 +11,7 @@ mise install
 mise exec -- bun install --frozen-lockfile
 ```
 
-`mise.toml` pins the versions of Bun, Node.js, TypeScript, Python, and hk. Its postinstall hook runs `hk install --mise` to enable Git hooks. Bun manages dependencies with the committed `bun.lock`; TypeScript comes from mise.
+`mise.toml` pins the versions of Bun, Node.js, TypeScript, Python, and hk. Its postinstall hook runs `hk install --mise` to enable Git hooks. Bun manages dependencies with the committed `bun.lock` and runs package scripts; Node.js executes all application code. TypeScript comes from mise.
 
 In PowerShell, use `mise.exe` for commands with `exec --` so the activated mise wrapper preserves arguments:
 
@@ -20,7 +20,7 @@ mise.exe exec -- bun install --frozen-lockfile
 mise.exe exec -- bun run dev
 ```
 
-Copy `.env.example` to `.env` and fill in the provider keys when needed. Local `.env` files are ignored by Git. Bun loads `.env` during development.
+Copy `.env.example` to `.env` and fill in the provider keys when needed. Local `.env` files are ignored by Git. Both `dev` and `start` explicitly load an optional `.env` file through Node.js.
 
 ## Development
 
@@ -33,7 +33,7 @@ bun run build
 bun run start
 ```
 
-`dev` runs the entry point with Bun and restarts on changes. `check` type-checks without emitting files. `build` compiles to `dist/`, and `start` runs the compiled entry point with Node.js. Run `build` before `start`. To load local provider keys with Node.js, use `mise exec -- node --env-file=.env dist/index.js`.
+`dev` runs the TypeScript entry point under Node.js using `--import tsx` and restarts on changes with Node.js watch mode. The `tsx` loader handles TypeScript and resolves `.js` relative imports to TypeScript source during development; it does not type-check. `check` type-checks without emitting files. `build` compiles to `dist/`, and `start` runs the compiled entry point with Node.js. Run `build` before `start`.
 
 `tsconfig.base.json` enables strict checking, unchecked indexed access checks, ES2023, and NodeNext modules. `tsconfig.json` defines this project's source and output directories. Use `.js` extensions for relative imports so compiled modules run in Node.js.
 
