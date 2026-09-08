@@ -2,6 +2,7 @@
 Thumbs.db
 Desktop.ini
 node_modules/
+.aspire/
 dist/
 .venv/
 __pycache__/

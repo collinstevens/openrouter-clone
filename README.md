@@ -11,7 +11,7 @@ mise install
 mise exec -- bun install --frozen-lockfile
 ```
 
-`mise.toml` pins the versions of Bun, Node.js, TypeScript, Python, and hk. Its postinstall hook runs `hk install --mise` to enable Git hooks. Bun manages dependencies with the committed `bun.lock` and runs package scripts; Node.js executes all application code. TypeScript comes from mise.
+`mise.toml` pins the versions of Aspire, Bun, Node.js, TypeScript, Python, and hk. Its postinstall hook runs `hk install --mise` to enable Git hooks. Bun manages dependencies for the app and AppHost workspace with the root `bun.lock` and runs package scripts; Node.js executes all application code. TypeScript comes from mise.
 
 In PowerShell, use `mise.exe` for commands with `exec --` so the activated mise wrapper preserves arguments:
 
@@ -76,7 +76,83 @@ The pinned exporters use **OTLP/HTTP JSON**. Other protocols and exporter types 
 
 Logs export and `OTEL_PROPAGATORS` selection are intentionally not enabled: this foundation always uses W3C trace context. Export runs asynchronously; an unavailable collector does not prevent startup, change readiness, or fail application requests. Shutdown is bounded even if a collector accepts a connection and never responds. Queued telemetry can be lost when the deadline expires or the process is forcibly terminated. The provider verification script remains separate and does not initialize this SDK.
 
-### Inspect locally in PowerShell
+### TypeScript Aspire AppHost
+
+Start the app and dashboard together from the repository root:
+
+```powershell
+mise.exe exec -- bun run aspire
+```
+
+Stop any standalone dashboard first with `mise.exe exec -- bun run otel:down`, since it uses the same dashboard and OTLP ports. Stop a separately running `bun run dev` process too if you only want one app instance. The AppHost starts its own dashboard process; Docker and the .NET SDK are not required for this app's resources.
+
+`aspire-apphost/apphost.mts` uses Aspire's [JavaScript integration](https://aspire.dev/integrations/frameworks/javascript/) to run `bun install --frozen-lockfile`, then the root `dev` script under Node.js watch mode. Aspire allocates the app's HTTP port and injects `PORT`; use the endpoint shown in the dashboard's **Resources** page instead of assuming port 3000. The `/healthz/ready` check determines the resource's health. The dashboard also provides console logs and start, stop, and restart commands.
+
+The AppHost enables telemetry for its child process and uses `withOtlpExporter({ protocol: OtlpProtocol.HttpJson })` to inject the dashboard endpoint and authentication headers. These values override the corresponding `.env` values; no `.env` changes are needed. Metrics export every five seconds. The existing instrumentation, health exclusions, and shutdown owner stay in the app.
+
+`aspire.config.json` pins the SDK and JavaScript integration to **13.5.3**, matching the CLI pin in `mise.toml`. Its local HTTP profile binds the dashboard to `http://127.0.0.1:18888` and OTLP/HTTP to `http://127.0.0.1:4318`. Browser token login and OTLP API key authentication remain enabled. Open the login URL printed by Aspire; it changes when the AppHost restarts. Configuration follows the [TypeScript AppHost profile format](https://aspire.dev/app-host/configuration/).
+
+To inspect the running app from another terminal:
+
+```powershell
+mise.exe exec -- aspire describe
+mise.exe exec -- aspire logs openrouter-clone
+mise.exe exec -- aspire otel traces
+```
+
+Send a request to `/telemetry-demo` at the app endpoint to generate a 404 trace without calling a provider. Health checks do not generate telemetry. Ctrl+C in the AppHost terminal stops the managed app and dashboard. For background operation, use `mise.exe exec -- aspire start` and `mise.exe exec -- aspire stop`.
+
+Aspire generates its TypeScript SDK under the ignored `aspire-apphost/.aspire/` directory. Regenerate it and type-check the AppHost with:
+
+```powershell
+mise.exe exec -- bun run aspire:check
+```
+
+`bun run aspire:restore` only regenerates/restores the SDK. The AppHost shares the root formatter, linter, TypeScript settings, and Bun lockfile. Ordinary `dev`, `start`, `check`, and `build` remain usable independently of Aspire.
+
+### Standalone Aspire dashboard
+
+Run the [standalone Aspire dashboard](https://aspire.dev/dashboard/standalone/) with Docker Desktop in Linux container mode (or Docker Engine with Compose). The dashboard receives the app's existing OTLP/HTTP JSON traces and metrics directly, as supported by the [Aspire configuration guide](https://aspire.dev/dashboard/configuration/).
+
+`compose.yaml` pins `mcr.microsoft.com/dotnet/aspire-dashboard:13.5.2`, the latest published stable dashboard image checked on September 8, 2026; its manifest matches `latest`. Aspire's GitHub release is 13.5.3, but that dashboard container tag is not published yet. No Aspire CLI, AppHost, or .NET SDK is required.
+
+From the repository root:
+
+```powershell
+mise.exe exec -- bun run otel:up
+mise.exe exec -- bun run otel:logs
+```
+
+Open the login URL printed in the logs at `http://localhost:18888/login?t=...`. Browser token authentication stays enabled. The UI binds to `127.0.0.1:18888`; unauthenticated OTLP ingestion binds to `127.0.0.1:4318`, mapped to the container's HTTP port 18890. Only local clients can reach these published ports. The app uses HTTP, so no gRPC port is published.
+
+In `.env`, change `OTEL_SDK_DISABLED` to `false` and keep the other OpenTelemetry values from `.env.example`, including `OTEL_EXPORTER_OTLP_PROTOCOL=http/json` and `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318`. Start the app separately:
+
+```powershell
+mise.exe exec -- bun run dev
+```
+
+In another terminal, generate telemetry without using provider tokens:
+
+```powershell
+curl.exe -i -H "traceparent: 00-0123456789abcdef0123456789abcdef-0123456789abcdef-01" http://127.0.0.1:3000/telemetry-demo
+pwsh -NoProfile -File scripts/check-health.ps1
+```
+
+The starter returns 404. Within about five seconds, select `openrouter-clone` in **Traces** to find its `GET` server span and supplied trace ID. In **Metrics**, inspect `http.server.request.count` and `http.server.request.duration`. Health calls produce neither spans nor metrics. Client spans appear when application code calls fetch or a provider SDK inside a request.
+
+The standalone dashboard stores telemetry in memory and clears it on restart. Resource management and console logs require an AppHost; this app currently exports traces and metrics only. Ordinary app startup remains independent of Docker, and an unavailable dashboard does not affect readiness or request success.
+
+Stop the app with Ctrl+C to drain requests and flush telemetry before stopping the dashboard:
+
+```powershell
+mise.exe exec -- bun run otel:down
+```
+
+Set `OTEL_SDK_DISABLED=true` to return to ordinary startup. Shell environment variables take precedence over `.env`.
+
+### Inspect raw telemetry in PowerShell
+
+The collector is an alternative to the dashboard for inspecting complete exported attributes. Stop the AppHost (Ctrl+C or `mise.exe exec -- aspire stop`) or standalone dashboard (`mise.exe exec -- bun run otel:down`) first: they use port 4318. Stop the collector with Ctrl+C before starting either dashboard again.
 
 Run from the repository root. Download and run the official Windows AMD64 collector in one terminal; Docker and hosted accounts are unnecessary:
 

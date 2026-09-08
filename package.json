@@ -1,10 +1,19 @@
 {
   "name": "openrouter-clone",
   "private": true,
+  "workspaces": [
+    "aspire-apphost"
+  ],
   "type": "module",
   "scripts": {
+    "aspire": "mise exec -- aspire run",
+    "aspire:restore": "mise exec -- aspire restore",
+    "aspire:check": "mise exec -- aspire restore && mise exec -- tsc --noEmit -p aspire-apphost/tsconfig.apphost.json",
     "dev": "mise exec -- node --watch --env-file-if-exists=.env --import tsx src/index.ts",
     "start": "mise exec -- node --env-file-if-exists=.env dist/index.js",
+    "otel:up": "docker compose up -d aspire-dashboard",
+    "otel:logs": "docker compose logs aspire-dashboard",
+    "otel:down": "docker compose down",
     "lint": "mise exec -- oxlint --deny-warnings",
     "lint:fix": "mise exec -- oxlint --deny-warnings --fix",
     "fmt": "mise exec -- oxfmt",

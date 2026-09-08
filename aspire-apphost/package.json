@@ -1,0 +1,15 @@
+{
+  "name": "openrouter-clone-apphost",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "vscode-jsonrpc": "8.2.1"
+  },
+  "devDependencies": {
+    "tsx": "4.23.13"
+  },
+  "engines": {
+    "node": ">=24.20.0"
+  },
+  "packageManager": "bun@1.4.2"
+}
