@@ -4,12 +4,35 @@ Interview workspace for building an OpenRouter clone and exploring the OpenAI an
 
 ## Setup
 
-Run this command from the repository root:
+Run these commands from the repository root:
 
 ```sh
 mise install
+mise exec -- bun install --frozen-lockfile
 ```
 
-`mise.toml` pins the versions of Bun, Node.js, TypeScript, and Python.
+`mise.toml` pins the versions of Bun, Node.js, TypeScript, and Python. Bun manages dependencies with the committed `bun.lock`; TypeScript comes from mise.
 
-Copy `.env.example` to `.env` and fill in the provider keys when needed. Local `.env` files are ignored by Git.
+In PowerShell, use `mise.exe` for commands with `exec --` so the activated mise wrapper preserves arguments:
+
+```powershell
+mise.exe exec -- bun install --frozen-lockfile
+mise.exe exec -- bun run dev
+```
+
+Copy `.env.example` to `.env` and fill in the provider keys when needed. Local `.env` files are ignored by Git. Bun loads `.env` during development.
+
+## Development
+
+Start implementing in `src/index.ts`:
+
+```sh
+bun run dev
+bun run check
+bun run build
+bun run start
+```
+
+`dev` runs the entry point with Bun and restarts on changes. `check` type-checks without emitting files. `build` compiles to `dist/`, and `start` runs the compiled entry point with Node.js. Run `build` before `start`. To load local provider keys with Node.js, use `mise exec -- node --env-file=.env dist/index.js`.
+
+`tsconfig.base.json` enables strict checking, unchecked indexed access checks, ES2023, and NodeNext modules. `tsconfig.json` defines this project's source and output directories. Use `.js` extensions for relative imports so compiled modules run in Node.js.

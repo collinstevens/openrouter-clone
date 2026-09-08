@@ -1,0 +1,18 @@
+{
+  "name": "openrouter-clone",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "mise exec -- bun --watch src/index.ts",
+    "start": "mise exec -- node dist/index.js",
+    "check": "mise exec -- tsc --noEmit",
+    "build": "mise exec -- tsc"
+  },
+  "devDependencies": {
+    "@types/node": "24"
+  },
+  "engines": {
+    "node": ">=24.20.0"
+  },
+  "packageManager": "bun@1.4.2"
+}
